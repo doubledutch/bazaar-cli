@@ -1,12 +1,12 @@
 module.exports = {
-  root_url: 'http://localhost:8181',
+  root_url: 'https://bazaar.doubledutch.me',
   signup_url: 'https://bazaar.doubledutch.me/',
   identity: {
-    root_url: 'https://qa-identity.doubledutch.me',
+    root_url: 'https://us-identity.doubledutch.me',
     cli: {
-      identifier: "Som32BNxSyK8BiBaah4Jsk",
-      secret: "vQ38DMEDrBZsv6wCUvWdm6KHxMLjZX2vYGWZQzX3SLfN",
-      id: "pkLdokWt66dNGMiC96AUE9"
+      identifier: "V522LkZVrj2wG7VJZnzMqz",
+      secret: "XzeXiEtpHqeQccPkY9qMa9P6eMy3m2qkXhw88kWWeJcZ",
+      id: "uB8qYsjbpeYrSLS4XrZBtg"
     }
   }
 }

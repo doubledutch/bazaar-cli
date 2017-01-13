@@ -8,8 +8,8 @@ module.exports = (project_path) => {
   } else {
     throw new Error(`${project_path} is not a directory`);
   }
-  if (!is_directory('.hz')) {
+  if (!is_directory('.bz')) {
     const nice_path = (project_path === '.' ? 'this directory' : project_path);
-    throw new Error(`${nice_path} doesn't contain an .hz directory`);
+    throw new Error(`${nice_path} doesn't contain an .bz directory`);
   }
 };

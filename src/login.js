@@ -28,7 +28,7 @@ const authenticate = (username, pass) => {
   return new Promise((resolve, reject) => {
     const tokenURL = config.identity.root_url + '/access/tokens'
     const form = { grant_type: 'password', username: username, password: pass }
-    const auth = 'Basic ' + new Buffer(config.cli.identity.identifier + ':' + config.cli.identity.secret).toString('base64')
+    const auth = 'Basic ' + new Buffer(config.identity.cli.identifier + ':' + config.identity.cli.secret).toString('base64')
     fetch(tokenURL , { body: formurlencoded(form), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/x-www-form-urlencoded' } })
       .then((response) => {
         if (response.status !== 200) {
@@ -57,14 +57,14 @@ const saveConfig = (username, tokenResponse) => {
 
   fs.appendFileSync(
     bzConfig,
-    JSON.stringify({ username: username, access_token: tokenResponse.access_token, refresh_token: tokenResponse.refresh_token }),
+    JSON.stringify({ username: username, name: '', access_token: tokenResponse.access_token, refresh_token: tokenResponse.refresh_token }),
     permissionGeneral
   );
   console.info(`Created ${bzConfig}`);
 }
 
 const parseArguments = (args) => {
-  const parser = new argparse.ArgumentParser({ prog: 'hz login' });
+  const parser = new argparse.ArgumentParser({ prog: 'bz login' });
   return parser.parseArgs(args);
 };
 

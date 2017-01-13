@@ -17,7 +17,7 @@ const NiceError = require('./utils/nice_error');
 // add an entry in this object, and create a module with the following
 // exported:
 // - run: main function for the command
-// - description: a string to display in the hz help text
+// - description: a string to display in the bz help text
 const commands = {
   init: initCommand,
   login: loginCommand,
