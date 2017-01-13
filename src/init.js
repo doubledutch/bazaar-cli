@@ -10,21 +10,23 @@ const checkProjectName = require('./utils/check-project-name');
 const rethrow = require('./utils/rethrow');
 const exec = require('child_process').exec
 
+const reactNativeVersion = '0.32.1'
+
 const makePackageJSON = (projectName) => `\
 {
   "name": "${projectName}",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "react-native start"
+    "start": "react-native start",
+    "run" : "node_modules/react-native/local-cli/cli.js run-ios"
   },
   "dependencies": {
     "@horizon/client": "^2.0.0",
-    "bazaar-client": "^0.0.7",
-    "react": "~15.3.0",
-    "react-addons-update": "~15.3.0",
-    "react-native": "^0.32.1",
-    "react-native-fs": "^1.5.1",
+    "bazaar-client": "^0.0.8",
+    "react": "15.3.0",
+    "react-addons-update": "15.3.0",
+    "react-native": "${reactNativeVersion}",
     "react-native-cli": "^2.0.1"
   },
   "devDependencies": {
@@ -43,16 +45,18 @@ npm install
 git clone https://github.com/doubledutch/bazaar-sample.git tmp
 mv tmp/* ./
 cd tmp
-node ../node_modules/react-native-cli/index.js init ${projectName}
+node ../node_modules/react-native-cli/index.js init ${projectName} --version react-native@${reactNativeVersion}
 cd ..
 mkdir ios
 mv tmp/${projectName}/ios/* ios/
 mkdir android
 mv tmp/${projectName}/android/* android/
-cp tmp/${projectName}/index.*.js ./
+sed -i '' 's/bazaar_sample/${projectName}/' package.json
+sed -i '' 's/bazaar_sample/${projectName}/' index.ios.js
+sed -i '' 's/bazaar_sample/${projectName}/' index.android.js
+npm install
 rm -rf tmp
 rm -rf node_modules/bazaar-client/node_modules/react-native/
-node node_modules/react-native/local-cli/cli.js run-ios
 `;
 
 const makeFeatureJSON = (projectName) => `\
@@ -136,18 +140,6 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName) => {
     mode: 0o600, // Secrets are put in this config, so set it user, read/write only
   };
 
-  // Create .gitignore if it doesn't exist
-  if (!fileExists('.gitignore')) {
-    fs.appendFileSync(
-      '.gitignore',
-      gitignore(),
-      permissionGeneral
-    );
-    console.info(`Created ${niceDir}.gitignore`);
-  } else {
-    console.info('.gitignore already exists, not touching it.');
-  }
-
   // Create package.json if it doesn't exist
   if (!fileExists('package.json')) {
     fs.appendFileSync(
@@ -208,7 +200,15 @@ const run = (args) =>
         console.log(`Initializing project`)
 
         exec(`sh bazaar.sh`, function(err,stdout,stderr) {
-          console.log(err,stdout,stderr);
+          if (err && err.length) {
+            console.log(err)
+            reject(err)
+          } else if (stderr && stderr.length) {
+            console.log(stderr)
+            reject(stderr)
+          } else {
+            console.log('Finished creating project')
+          }
         })
       })
   })

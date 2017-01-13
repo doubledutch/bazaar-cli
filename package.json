@@ -1,6 +1,6 @@
 {
   "name": "bazaar-cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The CLI for Bazaar: a framework to build mobile app features in React+Horizon",
   "main": "src/main.js",
   "repository": {
@@ -24,6 +24,7 @@
     "joi": "^8.0.5",
     "jsonwebtoken": "^5.5.4",
     "mime-types": "^2.0.4",
+    "mute-stream": "0.0.7",
     "node-fetch": "^1.6.3",
     "open": "0.0.5",
     "rethinkdb": "^2.1.1",
