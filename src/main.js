@@ -11,6 +11,8 @@ const initCommand = require('./init');
 const versionCommand = require('./version');
 const publishCommand = require('./publish');
 const loginCommand = require('./login');
+const installCommand = require('./install');
+const uninstallCommand = require('./uninstall');
 
 const NiceError = require('./utils/nice_error');
 // Mapping from command line strings to modules. To add a new command,
@@ -23,6 +25,8 @@ const commands = {
   login: loginCommand,
   version: versionCommand,
   publish: publishCommand,
+  install: installCommand,
+  uninstall: uninstallCommand
 };
 
 const programName = path.basename(process.argv[1]);
