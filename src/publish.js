@@ -26,8 +26,8 @@ const resolveHome = function (filepath) {
 const bzHome = resolveHome('~/.bz')
 const bzConfig = bzHome + '/config.json'
 
-const iosBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/7895b25b/base.ios.${config.react_native_version}.bundle?raw=true`
-const androidBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/7895b25b/base.android.${config.react_native_version}.bundle?raw=true`
+const iosBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/master/base.ios.${config.react_native_version}.bundle?raw=true`
+const androidBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/master/base.android.${config.react_native_version}.bundle?raw=true`
 
 const publishSchema = (accountConfig, json, featureID) => {
   return new Promise((resolve, reject) => {
@@ -72,13 +72,13 @@ const publishBinary = (accountConfig, json, featureID) => {
       // TODO - set this on server based on token
       json.developer = { name: '', email: accountConfig.username, phone: '' }
 
-      console.log('Downloading iOS and Android base bundles')
+      console.log(`Downloading iOS and Android base bundles (version ${config.react_native_version})`)
       Promise.all([fetch(iosBaseBundle).then((response) => response.text()), fetch(androidBaseBundle).then((response) => response.text())])
         .then((results) => {
           const [iosBase, androidBase] = results
           console.log('Generating iOS feature bundle')
           const dmp = new DiffMatchPatch()
-          dmp.Diff_Timeout = 20
+          dmp.Diff_Timeout = 30
 
           exec(`react-native bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
             console.log('Generating iOS patch file')
@@ -89,6 +89,9 @@ const publishBinary = (accountConfig, json, featureID) => {
 
             console.log('Generating Android feature bundle')
             exec(`react-native bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+              
+              const dmp = new DiffMatchPatch()
+              dmp.Diff_Timeout = 60
               const androidFeature = fs.readFileSync(`index.android.${config.react_native_version}.bundle`, 'utf8')
 
               console.log('Generating Android patch file')
