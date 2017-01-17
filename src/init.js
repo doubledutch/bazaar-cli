@@ -10,7 +10,7 @@ const checkProjectName = require('./utils/check-project-name');
 const rethrow = require('./utils/rethrow');
 const exec = require('child_process').exec
 
-const reactNativeVersion = '0.32.1'
+const reactNativeVersion = '0.33.0'
 
 const makePackageJSON = (projectName) => `\
 {
@@ -23,9 +23,9 @@ const makePackageJSON = (projectName) => `\
   },
   "dependencies": {
     "@horizon/client": "^2.0.0",
-    "bazaar-client": "^0.0.8",
-    "react": "15.3.0",
-    "react-addons-update": "15.3.0",
+    "bazaar-client": "^0.0.9",
+    "react": "15.3.1",
+    "react-addons-update": "15.3.1",
     "react-native": "${reactNativeVersion}",
     "react-native-cli": "^2.0.1"
   },

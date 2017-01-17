@@ -13,6 +13,7 @@ const read = require('./utils/read');
 const fetch = require('node-fetch');
 const formurlencoded = require('form-urlencoded')
 const config = require('./config')
+const DiffMatchPatch = require('diff-match-patch')
 
 const resolveHome = function (filepath) {
   if (filepath[0] === '~') {
@@ -25,6 +26,38 @@ const bzHome = resolveHome('~/.bz')
 const bzConfig = bzHome + '/config.json'
 
 const publishSchema = (accountConfig, json, featureID) => {
+  return new Promise((resolve, reject) => {
+    // TODO - we should really just check the expiration of the token
+    requestAccessToken(accountConfig.username, accountConfig.refresh_token).then((access_token) => {
+      const featureURL = config.root_url + '/api/features' + (featureID ? ('/' + featureID) : '')
+      const method = featureID ? 'PUT' : 'POST'
+      const auth = 'Bearer ' + access_token
+
+      // TODO - set this on server based on token
+      json.developer = { name: '', email: accountConfig.username, phone: '' }
+
+      fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
+        .then((response) => {
+          if (response.status !== 200) {
+            throw 'Error creating/updating feature'
+          }
+          return response.json()
+        })
+        .then((json) => {
+          resolve(json)
+        })
+        .catch((err) => {
+          console.log(err)
+          reject(err)
+        })
+    }).catch((err) => {
+          console.log(err)
+      reject(err)
+    })
+  })
+}
+
+const publishBinary = (accountConfig, json, featureID) => {
   return new Promise((resolve, reject) => {
     // TODO - we should really just check the expiration of the token
     requestAccessToken(accountConfig.username, accountConfig.refresh_token).then((access_token) => {
@@ -165,6 +198,14 @@ const run = (args) =>
             return new Promise((resolve, reject) => {
               publishSchema(configJSON, bazaarJSON, bazaarFeatureID).then((result) => {
                 saveFeatureConfig(result)
+              }).catch((err) => {
+                console.log(err)
+              })
+            })
+          } else if (parsed.action === 'binary') {
+            return new Promise((resolve, reject) => {
+              publishBinary(configJSON, bazaarJSON, bazaarFeatureID).then((result) => {
+                console.log(result)
               }).catch((err) => {
                 console.log(err)
               })
