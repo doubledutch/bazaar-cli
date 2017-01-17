@@ -9,8 +9,9 @@ const argparse = require('argparse');
 const checkProjectName = require('./utils/check-project-name');
 const rethrow = require('./utils/rethrow');
 const exec = require('child_process').exec
+const config = require('./config')
 
-const reactNativeVersion = '0.33.0'
+const reactNativeVersion = config.react_native_version
 
 const makePackageJSON = (projectName) => `\
 {
@@ -199,7 +200,7 @@ const run = (args) =>
         
         console.log(`Initializing project`)
 
-        exec(`sh bazaar.sh`, function(err,stdout,stderr) {
+        exec(`sh bazaar.sh`, function(err, stdout, stderr) {
           if (err && err.length) {
             console.log(err)
             reject(err)

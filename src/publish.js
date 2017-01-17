@@ -14,6 +14,7 @@ const fetch = require('node-fetch');
 const formurlencoded = require('form-urlencoded')
 const config = require('./config')
 const DiffMatchPatch = require('diff-match-patch')
+const exec = require('child_process').exec
 
 const resolveHome = function (filepath) {
   if (filepath[0] === '~') {
@@ -24,6 +25,9 @@ const resolveHome = function (filepath) {
 
 const bzHome = resolveHome('~/.bz')
 const bzConfig = bzHome + '/config.json'
+
+const iosBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/7895b25b/base.ios.${config.react_native_version}.bundle?raw=true`
+const androidBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/7895b25b/base.android.${config.react_native_version}.bundle?raw=true`
 
 const publishSchema = (accountConfig, json, featureID) => {
   return new Promise((resolve, reject) => {
@@ -68,22 +72,39 @@ const publishBinary = (accountConfig, json, featureID) => {
       // TODO - set this on server based on token
       json.developer = { name: '', email: accountConfig.username, phone: '' }
 
-      fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
-        .then((response) => {
-          if (response.status !== 200) {
-            throw 'Error creating/updating feature'
-          }
-          return response.json()
-        })
-        .then((json) => {
-          resolve(json)
+      console.log('Downloading iOS and Android base bundles')
+      Promise.all([fetch(iosBaseBundle).then((response) => response.text()), fetch(androidBaseBundle).then((response) => response.text())])
+        .then((results) => {
+          const [iosBase, androidBase] = results
+          console.log('Generating iOS feature bundle')
+          const dmp = new DiffMatchPatch()
+          dmp.Diff_Timeout = 20
+
+          exec(`react-native bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+            console.log('Generating iOS patch file')
+            const iosFeature = fs.readFileSync(`index.ios.${config.react_native_version}.bundle`, 'utf8')
+            var iosPatch = dmp.patch_make(iosBase, iosFeature)
+
+            fs.writeFileSync(`index.ios.${config.react_native_version}.patch`, dmp.patch_toText(iosPatch), { encoding: 'utf8' })
+
+            console.log('Generating Android feature bundle')
+            exec(`react-native bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+              const androidFeature = fs.readFileSync(`index.android.${config.react_native_version}.bundle`, 'utf8')
+
+              console.log('Generating Android patch file')
+              var androidPatch = dmp.patch_make(androidBase, androidFeature)
+
+              fs.writeFileSync(`index.android.${config.react_native_version}.patch`, dmp.patch_toText(androidPatch), { encoding: 'utf8' })
+            })
+          })
+
         })
         .catch((err) => {
           console.log(err)
           reject(err)
         })
     }).catch((err) => {
-          console.log(err)
+      console.log(err)
       reject(err)
     })
   })
