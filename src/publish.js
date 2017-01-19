@@ -78,17 +78,18 @@ const publishBinary = (accountConfig, json, featureID) => {
           const [iosBase, androidBase] = results
           console.log('Generating iOS feature bundle')
           const dmp = new DiffMatchPatch()
-          dmp.Diff_Timeout = 30
+          dmp.Diff_Timeout = 60
 
-          exec(`react-native bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+          fs.writeFileSync(`base.ios.${config.react_native_version}.bundle`, iosBase, { encoding: 'utf8' })
+
+          exec(`echo react-native bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
             console.log('Generating iOS patch file')
             const iosFeature = fs.readFileSync(`index.ios.${config.react_native_version}.bundle`, 'utf8')
             var iosPatch = dmp.patch_make(iosBase, iosFeature)
 
             fs.writeFileSync(`index.ios.${config.react_native_version}.patch`, dmp.patch_toText(iosPatch), { encoding: 'utf8' })
-
             console.log('Generating Android feature bundle')
-            exec(`react-native bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+            exec(`echo react-native bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
               
               const dmp = new DiffMatchPatch()
               dmp.Diff_Timeout = 60
@@ -98,6 +99,30 @@ const publishBinary = (accountConfig, json, featureID) => {
               var androidPatch = dmp.patch_make(androidBase, androidFeature)
 
               fs.writeFileSync(`index.android.${config.react_native_version}.patch`, dmp.patch_toText(androidPatch), { encoding: 'utf8' })
+
+              console.log('Uploading binaries')
+              const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
+              const auth = 'Bearer ' + access_token
+              const json = {
+                reactNativeVersion: config.react_native_version,
+                iosBinary: dmp.patch_toText(iosPatch),
+                androidBinary: dmp.patch_toText(androidPatch)
+              }
+
+              fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
+                .then((response) => {
+                  if (response.status !== 200) {
+                    throw 'Error creating/updating feature'
+                  }
+                  return response.json()
+                })
+                .then((json) => {
+                  resolve(json)
+                })
+                .catch((err) => {
+                  console.log(err)
+                  reject(err)
+                })
             })
           })
 

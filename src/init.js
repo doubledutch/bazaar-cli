@@ -12,6 +12,7 @@ const exec = require('child_process').exec
 const config = require('./config')
 
 const reactNativeVersion = config.react_native_version
+const reactVersion = config.react_version
 
 const makePackageJSON = (projectName) => `\
 {
@@ -25,8 +26,8 @@ const makePackageJSON = (projectName) => `\
   "dependencies": {
     "@horizon/client": "^2.0.0",
     "bazaar-client": "^0.0.9",
-    "react": "15.3.1",
-    "react-addons-update": "15.3.1",
+    "react": "${reactVersion}",
+    "react-addons-update": "${reactVersion}",
     "react-native": "${reactNativeVersion}",
     "react-native-cli": "^2.0.1"
   },
