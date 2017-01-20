@@ -82,14 +82,14 @@ const publishBinary = (accountConfig, json, featureID) => {
 
           fs.writeFileSync(`base.ios.${config.react_native_version}.bundle`, iosBase, { encoding: 'utf8' })
 
-          exec(`echo react-native bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+          exec(`/Users/nicholasclark/git/rn-packager/bin/rnpackager bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
             console.log('Generating iOS patch file')
             const iosFeature = fs.readFileSync(`index.ios.${config.react_native_version}.bundle`, 'utf8')
             var iosPatch = dmp.patch_make(iosBase, iosFeature)
 
             fs.writeFileSync(`index.ios.${config.react_native_version}.patch`, dmp.patch_toText(iosPatch), { encoding: 'utf8' })
             console.log('Generating Android feature bundle')
-            exec(`echo react-native bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+            exec(`/Users/nicholasclark/git/rn-packager/bin/rnpackager bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
               
               const dmp = new DiffMatchPatch()
               dmp.Diff_Timeout = 60
