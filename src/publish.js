@@ -26,8 +26,8 @@ const resolveHome = function (filepath) {
 const bzHome = resolveHome('~/.bz')
 const bzConfig = bzHome + '/config.json'
 
-const iosBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/master/base.ios.${config.react_native_version}.bundle?raw=true`
-const androidBaseBundle = `https://cdn.rawgit.com/doubledutch/bazaar-cli/master/base.android.${config.react_native_version}.bundle?raw=true`
+const iosBaseBundle = `https://rawgit.com/doubledutch/bazaar-cli/master/base.ios.${config.react_native_version}.bundle?raw=true`
+const androidBaseBundle = `https://rawgit.com/doubledutch/bazaar-cli/master/base.android.${config.react_native_version}.bundle?raw=true`
 
 const publishSchema = (accountConfig, json, featureID) => {
   return new Promise((resolve, reject) => {
@@ -76,53 +76,63 @@ const publishBinary = (accountConfig, json, featureID) => {
       Promise.all([fetch(iosBaseBundle).then((response) => response.text()), fetch(androidBaseBundle).then((response) => response.text())])
         .then((results) => {
           const [iosBase, androidBase] = results
-          console.log('Generating iOS feature bundle')
           const dmp = new DiffMatchPatch()
           dmp.Diff_Timeout = 60
 
           fs.writeFileSync(`base.ios.${config.react_native_version}.bundle`, iosBase, { encoding: 'utf8' })
+          fs.writeFileSync(`base.android.${config.react_native_version}.bundle`, androidBase, { encoding: 'utf8' })
 
-          exec(`/Users/nicholasclark/git/rn-packager/bin/rnpackager bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
-            console.log('Generating iOS patch file')
-            const iosFeature = fs.readFileSync(`index.ios.${config.react_native_version}.bundle`, 'utf8')
-            var iosPatch = dmp.patch_make(iosBase, iosFeature)
+          console.log('Generating Web feature bundle')
+          exec(`npm run build-web`, (err, stdout, stderr) => {
+            const webBinary = fs.readFileSync(`web/static/build/bundle.js`, 'utf8')
+            const webHTML = fs.readFileSync(`web/static/index.html`, 'utf8')
 
-            fs.writeFileSync(`index.ios.${config.react_native_version}.patch`, dmp.patch_toText(iosPatch), { encoding: 'utf8' })
-            console.log('Generating Android feature bundle')
-            exec(`/Users/nicholasclark/git/rn-packager/bin/rnpackager bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
-              
-              const dmp = new DiffMatchPatch()
-              dmp.Diff_Timeout = 60
-              const androidFeature = fs.readFileSync(`index.android.${config.react_native_version}.bundle`, 'utf8')
+            console.log('Generating iOS feature bundle')
 
-              console.log('Generating Android patch file')
-              var androidPatch = dmp.patch_make(androidBase, androidFeature)
+            exec(`node_modules/dd-rn-packager/bin/rnpackager bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+              console.log('Generating iOS patch file')
+              const iosFeature = fs.readFileSync(`index.ios.${config.react_native_version}.bundle`, 'utf8')
+              var iosPatch = dmp.patch_make(iosBase, iosFeature)
 
-              fs.writeFileSync(`index.android.${config.react_native_version}.patch`, dmp.patch_toText(androidPatch), { encoding: 'utf8' })
+              fs.writeFileSync(`index.ios.${config.react_native_version}.patch`, dmp.patch_toText(iosPatch), { encoding: 'utf8' })
+              console.log('Generating Android feature bundle')
+              exec(`node_modules/dd-rn-packager/bin/rnpackager bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
+                
+                const dmp = new DiffMatchPatch()
+                dmp.Diff_Timeout = 60
+                const androidFeature = fs.readFileSync(`index.android.${config.react_native_version}.bundle`, 'utf8')
 
-              console.log('Uploading binaries')
-              const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
-              const auth = 'Bearer ' + access_token
-              const json = {
-                reactNativeVersion: config.react_native_version,
-                iosBinary: dmp.patch_toText(iosPatch),
-                androidBinary: dmp.patch_toText(androidPatch)
-              }
+                console.log('Generating Android patch file')
+                var androidPatch = dmp.patch_make(androidBase, androidFeature)
 
-              fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
-                .then((response) => {
-                  if (response.status !== 200) {
-                    throw 'Error creating/updating feature'
-                  }
-                  return response.json()
-                })
-                .then((json) => {
-                  resolve(json)
-                })
-                .catch((err) => {
-                  console.log(err)
-                  reject(err)
-                })
+                fs.writeFileSync(`index.android.${config.react_native_version}.patch`, dmp.patch_toText(androidPatch), { encoding: 'utf8' })
+
+                console.log('Uploading binaries')
+                const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
+                const auth = 'Bearer ' + access_token
+                const json = {
+                  reactNativeVersion: config.react_native_version,
+                  iosBinary: dmp.patch_toText(iosPatch),
+                  androidBinary: dmp.patch_toText(androidPatch),
+                  webBinary: webBinary,
+                  webHTML: webHTML
+                }
+
+                fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
+                  .then((response) => {
+                    if (response.status !== 200) {
+                      throw 'Error creating/updating feature'
+                    }
+                    return response.json()
+                  })
+                  .then((json) => {
+                    resolve(json)
+                  })
+                  .catch((err) => {
+                    console.log(err)
+                    reject(err)
+                  })
+              })
             })
           })
 
@@ -240,6 +250,7 @@ const run = (args) =>
           var bazaarFeatureID = null
           if (bazaarJSON.id) {
             console.log('Publishing update')
+            bazaarFeatureID = bazaarJSON.id
           } else {
             console.log('Publishing v1')
           }
