@@ -45063,12 +45063,12 @@ var warningInfo=_warningMap.get(warning);
 if(warningInfo){
 warningInfo.count+=1;
 }else{
-var _error=new Error();
-_error.framesToPop=2;
+var error=new Error();
+error.framesToPop=2;
 
 _warningMap.set(warning,{
 count:1,
-stacktrace:parseErrorStack(_error),
+stacktrace:parseErrorStack(error),
 symbolicated:false});
 
 }
@@ -68134,8 +68134,9 @@ module.exports=throwOnWrongReactAPI;
 }, 0x9c77ba3711445d7aa09758b5bfe4eda9, null, "throwOnWrongReactAPI");
 __d(/* bazaar-client/src/index.js */function(global, require, module, exports) {var _client=require(0x59c9e00a380b0d26850d3a56429f3522);var _client2=babelHelpers.interopRequireDefault(_client);
 var _view=require(0xd9308173d6bd882381964aa122d2e74b);var _view2=babelHelpers.interopRequireDefault(_view);
+var _ddWeb=require(0x49fe36893541133f5c0ce6119e76a665);var _ddWeb2=babelHelpers.interopRequireDefault(_ddWeb);
 
-module.exports={Client:_client2.default,View:_view2.default};
+module.exports={Client:_client2.default,View:_view2.default,WebShim:_ddWeb2.default};
 }, 0x882912db7a88a517f554f405a12712d6, null, "bazaar-client/src/index.js");
 __d(/* bazaar-client/src/client.js */function(global, require, module, exports) {Object.defineProperty(exports,"__esModule",{value:true});var _reactNative=require(0xbee4bea60954fa0b843b7f9d44155633);var _reactNative2=babelHelpers.interopRequireDefault(_reactNative);
 var _client=require(0x7f394705f6381ee47b414e59558b819e);var _client2=babelHelpers.interopRequireDefault(_client);
@@ -68144,8 +68145,8 @@ var _ddShim=require(0x98ecada88d45087579ac32ae3838eb07);var _ddShim2=babelHelper
 
 
 
-function _class(DD,options){babelHelpers.classCallCheck(this,_class);
-this.DD=DD||_ddShim2.default;
+function _class(dd,options){babelHelpers.classCallCheck(this,_class);
+this.DD=dd||_ddShim2.default;
 this.isSandboxed=options.isSandboxed;
 this.featureName=options.featureName;
 this.eventID=options.eventID;
@@ -77033,47 +77034,27 @@ reject(err);
 
 };
 }, 0x0833d4e5c842f8744f20fd312e21c4d2, null, "bazaar-client/src/native-localstorage-shim.js");
-__d(/* bazaar-client/src/dd-shim.js */function(global, require, module, exports) {Object.defineProperty(exports,"__esModule",{value:true});exports.default=DD={
+__d(/* bazaar-client/src/dd-shim.js */function(global, require, module, exports) {Object.defineProperty(exports,"__esModule",{value:true});exports.default={
 setTitle:function setTitle(){},
 requestAccessToken:function requestAccessToken(callback){return callback(null,'fake-access-token');}};
 }, 0x98ecada88d45087579ac32ae3838eb07, null, "bazaar-client/src/dd-shim.js");
 __d(/* bazaar-client/src/view.js */function(global, require, module, exports) {var _reactNative=require(0xbee4bea60954fa0b843b7f9d44155633);var _reactNative2=babelHelpers.interopRequireDefault(_reactNative);
-var _react=require(0xf7f9979adc92f4b5fe529805edcde408);var _react2=babelHelpers.interopRequireDefault(_react);var _require=
-require(0xbee4bea60954fa0b843b7f9d44155633),Platform=_require.Platform;var
+var _react=require(0xf7f9979adc92f4b5fe529805edcde408);var _react2=babelHelpers.interopRequireDefault(_react);
 
-
-View=_reactNative2.default.View,
-Text=_reactNative2.default.Text,
-NativeModules=_reactNative2.default.NativeModules,
-TouchableHighlight=_reactNative2.default.TouchableHighlight,
-TouchableOpacity=_reactNative2.default.TouchableOpacity,
-ScrollView=_reactNative2.default.ScrollView,
-Image=_reactNative2.default.Image;
-
-
-function newRandomRoute(){
-return{
-title:'#'+Math.ceil(Math.random()*1000)};
-
-}
-var hamburger='data:image/png;base64,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';
-var backAndorid='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAG1BMVEUAAAD////////////////////////////////rTT7CAAAACHRSTlMADA1hYn+Aw5/nblIAAAB6SURBVHja7dW7DYBADARR87Fx/xUjEVx8HJoEzRSwL9wwMzNbKBPe7054HxWynxLcR4Xs0QHvX5v77rvv/k/3d/fddx/YX4zeb3q/J/ZhoL4CtBC0ELQQU8KXI1NQUFBQUFBQmBfOYIUKqBr7qFABVs8+KlSYmZm97wbp0CIIUTEq4AAAAABJRU5ErkJggg==';
+var backAndroid='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAG1BMVEUAAAD////////////////////////////////rTT7CAAAACHRSTlMADA1hYn+Aw5/nblIAAAB6SURBVHja7dW7DYBADARR87Fx/xUjEVx8HJoEzRSwL9wwMzNbKBPe7054HxWynxLcR4Xs0QHvX5v77rvv/k/3d/fddx/YX4zeb3q/J/ZhoL4CtBC0ELQQU8KXI1NQUFBQUFBQmBfOYIUKqBr7qFABVs8+KlSYmZm97wbp0CIIUTEq4AAAAABJRU5ErkJggg==';
 var NavigationBarRouteMapper={
 
 LeftButton:function LeftButton(route,navigator,index,navState){var _this=this;
 
 var previousRoute=index===0?{title:''}:navState.routeStack[index-1];
-var leftIcon=hamburger;
-if(Platform.OS==='android'){
-leftIcon=backAndorid;
-}
+var leftIcon=backAndroid;
 
 return(
-_react2.default.createElement(TouchableOpacity,{
+_react2.default.createElement(_reactNative.TouchableOpacity,{
 onPress:function onPress(){_this.props.showMenu();},
 style:styles.navBarLeftButton},
-_react2.default.createElement(View,null,
-_react2.default.createElement(Image,{source:{uri:leftIcon},resizeMode:'contain',style:[styles.hamburger]}))));
+_react2.default.createElement(_reactNative.View,null,
+_react2.default.createElement(_reactNative.Image,{source:{uri:leftIcon},resizeMode:'contain',style:[styles.hamburger]}))));
 
 
 
@@ -77085,7 +77066,7 @@ return null;
 
 Title:function Title(route,navigator,index,navState){
 return(
-_react2.default.createElement(Text,{style:[styles.navBarText,styles.navBarTitleText]},
+_react2.default.createElement(_reactNative.Text,{style:[styles.navBarText,styles.navBarTitleText]},
 route.title));
 
 
@@ -77093,26 +77074,15 @@ route.title));
 
 
 
-DDView=function(_React$Component){babelHelpers.inherits(DDView,_React$Component);function DDView(){babelHelpers.classCallCheck(this,DDView);return babelHelpers.possibleConstructorReturn(this,(DDView.__proto__||Object.getPrototypeOf(DDView)).apply(this,arguments));}babelHelpers.createClass(DDView,[{key:'_handleButton',value:function _handleButton()
-{
-ModalWithNavigatorCoordinator.closeModal();
-}},{key:'_handleRowPress',value:function _handleRowPress()
-
-{
-this.refs.navigator.push({
-title:'Simple View',
-component:SimpleView});
-
-}},{key:'render',value:function render()
-
+DDView=function(_React$Component){babelHelpers.inherits(DDView,_React$Component);function DDView(){babelHelpers.classCallCheck(this,DDView);return babelHelpers.possibleConstructorReturn(this,(DDView.__proto__||Object.getPrototypeOf(DDView)).apply(this,arguments));}babelHelpers.createClass(DDView,[{key:'render',value:function render()
 {
 var data=[];
 var child=this.props.children;
 return(
 _react2.default.createElement(_reactNative.Navigator,{
-initialRoute:{name:'My First Scene',index:1,title:this.props.title},
+initialRoute:{name:'',index:1,title:this.props.title},
 renderScene:function renderScene(route,navigator){return(
-_react2.default.createElement(View,{style:styles.scene},child));},
+_react2.default.createElement(_reactNative.View,{style:styles.scene},child));},
 
 navigationBar:
 _react2.default.createElement(_reactNative.Navigator.NavigationBar,{
@@ -77127,15 +77097,10 @@ style:[styles.navBar,{backgroundColor:this.props.primaryColor}]})}));
 
 var styles=_reactNative.StyleSheet.create({
 hamburger:{
-flex:1,
 marginVertical:12,
 height:17,
 width:23,
 marginLeft:7},
-
-container:{
-flex:1,
-backgroundColor:'orange'},
 
 navBar:{
 backgroundColor:'#fff'},
@@ -77168,5 +77133,50 @@ flexDirection:'column'}});
 
 module.exports=DDView;
 }, 0xd9308173d6bd882381964aa122d2e74b, null, "bazaar-client/src/view.js");
+__d(/* bazaar-client/src/dd-web.js */function(global, require, module, exports) {Object.defineProperty(exports,"__esModule",{value:true});var bearerPrefix='Bearer ';exports.default=
+{install:function install(onReady){
+window.DD.Events.onReady(function(){
+window.DD.Events.getCurrentUserAsync(function(userJSON){
+window.DD.Events.getCurrentEventAsync(function(eventJSON){
+onReady(
+{
+primaryColor:'#000',
+currentUser:userJSON,
+currentEvent:eventJSON,
+configuration:eventJSON,
+apiRootURL:'https://',
+bundleURL:null,
+setTitle:function setTitle(){
+console.warn('setTitle not implemented on web');
+},
+requestAccessToken:function requestAccessToken(callback){
+window.DD.Events.getSignedAPIAsync('','',function(url,auth){
+callback(null,auth.substring(bearerPrefix.length,auth.length));
+});
+},
+refreshAccessToken:function refreshAccessToken(token,callback){
+window.DD.Events.getSignedAPIAsync('','',function(url,auth){
+callback(null,auth.substring(bearerPrefix.length,auth.length));
+});
+},
+canOpenURL:function canOpenURL(url,callback){
+callback(null,true);
+},
+openURL:function openURL(url){
+document.location=url;
+},
+showMenu:function showMenu(url){
+return;
+},
+setNavigationBarHidden:function setNavigationBarHidden(hidden,callback){
+return;
+}});
+
+
+});
+});
+});
+}};
+}, 0x49fe36893541133f5c0ce6119e76a665, null, "bazaar-client/src/dd-web.js");
 ;require('InitializeCore');
 ;require('bazaar_sample/base.js');
