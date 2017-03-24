@@ -40,7 +40,7 @@ const publishSchema = (accountConfig, json, featureID) => {
       // TODO - set this on server based on token
       json.developer = { name: '', email: accountConfig.username, phone: '' }
 
-      fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
+      fetch(featureURL, { body: JSON.stringify(json), method: method, headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
         .then((response) => {
           if (response.status !== 200) {
             throw 'Error creating/updating feature'
@@ -111,6 +111,7 @@ const publishBinary = (accountConfig, json, featureID) => {
                 const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
                 const auth = 'Bearer ' + access_token
                 const json = {
+                  version: json.version || '0.0.1',
                   reactNativeVersion: config.react_native_version,
                   iosBinary: dmp.patch_toText(iosPatch),
                   androidBinary: dmp.patch_toText(androidPatch),
