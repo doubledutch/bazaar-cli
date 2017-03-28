@@ -61,7 +61,7 @@ const publishSchema = (accountConfig, json, featureID) => {
   })
 }
 
-const publishBinary = (accountConfig, json, featureID) => {
+const publishBinary = (accountConfig, bzJson, featureID) => {
   return new Promise((resolve, reject) => {
     // TODO - we should really just check the expiration of the token
     requestAccessToken(accountConfig.username, accountConfig.refresh_token).then((access_token) => {
@@ -70,7 +70,7 @@ const publishBinary = (accountConfig, json, featureID) => {
       const auth = 'Bearer ' + access_token
 
       // TODO - set this on server based on token
-      json.developer = { name: '', email: accountConfig.username, phone: '' }
+      bzJson.developer = { name: '', email: accountConfig.username, phone: '' }
 
       console.log(`Downloading iOS and Android base bundles (version ${config.react_native_version})`)
       Promise.all([fetch(iosBaseBundle).then((response) => response.text()), fetch(androidBaseBundle).then((response) => response.text())])
@@ -111,7 +111,7 @@ const publishBinary = (accountConfig, json, featureID) => {
                 const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
                 const auth = 'Bearer ' + access_token
                 const json = {
-                  version: json.version || '0.0.1',
+                  version: bzJson.version || '0.0.1',
                   reactNativeVersion: config.react_native_version,
                   iosBinary: dmp.patch_toText(iosPatch),
                   androidBinary: dmp.patch_toText(androidPatch),

@@ -1,6 +1,6 @@
 {
   "name": "bazaar-cli",
-  "version": "0.40.1",
+  "version": "0.40.2",
   "description": "The CLI for Bazaar: a framework to build mobile app features in React+Horizon",
   "main": "src/main.js",
   "repository": {
