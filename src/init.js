@@ -92,11 +92,16 @@ const parseArguments = (args) => {
 };
 
 const fileExists = (pathName) => {
+  var stat=null
   try {
-    fs.statSync(pathName);
-    return true;
+    stat=fs.statSync(pathName);
   } catch (e) {
     return false;
+  }
+  if(stat.isFile()){
+    return true
+  }else{
+     throw pathName+' is not a file'
   }
 };
 
