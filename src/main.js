@@ -8,6 +8,7 @@ const chalk = require('chalk');
 const path = require('path');
 
 const initCommand = require('./init');
+const upgradeCommand = require('./upgrade');
 const versionCommand = require('./version');
 const publishCommand = require('./publish');
 const loginCommand = require('./login');
@@ -22,6 +23,7 @@ const NiceError = require('./utils/nice_error');
 // - description: a string to display in the bz help text
 const commands = {
   init: initCommand,
+  upgrade: upgradeCommand,
   login: loginCommand,
   version: versionCommand,
   publish: publishCommand,
