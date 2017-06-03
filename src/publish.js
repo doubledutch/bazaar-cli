@@ -15,6 +15,8 @@ const formurlencoded = require('form-urlencoded')
 const config = require('./config')
 const DiffMatchPatch = require('diff-match-patch')
 const exec = require('child_process').exec
+const pkg = require('../package.json')
+const NodeZip = require('node-zip')
 
 const resolveHome = function (filepath) {
   if (filepath[0] === '~') {
@@ -26,8 +28,11 @@ const resolveHome = function (filepath) {
 const bzHome = resolveHome('~/.bz')
 const bzConfig = bzHome + '/config.json'
 
-const iosBaseBundle = `https://rawgit.com/doubledutch/bazaar-cli/master/base.ios.${config.react_native_version}.bundle?raw=true`
-const androidBaseBundle = `https://rawgit.com/doubledutch/bazaar-cli/master/base.android.${config.react_native_version}.bundle?raw=true`
+const iosBaseBundle = `https://dd-bazaar.s3.amazonaws.com/lib/bundles/base.ios.${config.base_bundle_version}.bundle?raw=true`
+const androidBaseBundle = `https://dd-bazaar.s3.amazonaws.com/lib/bundles/base.android.${config.base_bundle_version}.bundle?raw=true`
+const iosBaseManifest = `https://dd-bazaar.s3.amazonaws.com/lib/bundles/base.ios.${config.base_bundle_version}.manifest`
+const androidBaseManifest = `https://dd-bazaar.s3.amazonaws.com/lib/bundles/base.android.${config.base_bundle_version}.manifest`
+
 
 const publishSchema = (accountConfig, json, featureID) => {
   return new Promise((resolve, reject) => {
@@ -55,7 +60,7 @@ const publishSchema = (accountConfig, json, featureID) => {
           reject(err)
         })
     }).catch((err) => {
-          console.log(err)
+      console.log(err)
       reject(err)
     })
   })
@@ -72,68 +77,159 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
       // TODO - set this on server based on token
       bzJson.developer = { name: '', email: accountConfig.username, phone: '' }
 
-      console.log(`Downloading iOS and Android base bundles (version ${config.react_native_version})`)
-      Promise.all([fetch(iosBaseBundle).then((response) => response.text()), fetch(androidBaseBundle).then((response) => response.text())])
+      console.log(`Downloading iOS and Android base bundles (version ${config.base_bundle_version})`)
+      Promise.all([
+        fetch(iosBaseBundle).then((response) => response.text()),
+        fetch(androidBaseBundle).then((response) => response.text()),
+        fetch(iosBaseManifest).then((response) => response.text()),
+        fetch(androidBaseManifest).then((response) => response.text())
+      ])
         .then((results) => {
-          const [iosBase, androidBase] = results
+          const [iosBase, androidBase, iosManifest, androidManifest] = results
           const dmp = new DiffMatchPatch()
           dmp.Diff_Timeout = 60
 
-          fs.writeFileSync(`base.ios.${config.react_native_version}.bundle`, iosBase, { encoding: 'utf8' })
-          fs.writeFileSync(`base.android.${config.react_native_version}.bundle`, androidBase, { encoding: 'utf8' })
+          exec(`rm -rf build/`, (err, stdout, stderr) => {
+            exec(`rm -rf tmp/`, (err, stdout, stderr) => {
 
-          console.log('Generating Web feature bundle')
-          exec(`npm run build-web`, (err, stdout, stderr) => {
-            const webBinary = fs.readFileSync(`web/static/build/bundle.js`, 'utf8')
-            const webHTML = fs.readFileSync(`web/static/index.html`, 'utf8')
+              if (!fs.existsSync('build')) {
+                fs.mkdirSync('build');
+              }
+              if (!fs.existsSync('build/bundle')) {
+                fs.mkdirSync('build/bundle');
+              }
+              if (!fs.existsSync('build/site')) {
+                fs.mkdirSync('build/site');
+              }
+              if (!fs.existsSync('build/site/private')) {
+                fs.mkdirSync('build/site/private');
+              }
+              if (!fs.existsSync('build/site/public')) {
+                fs.mkdirSync('build/site/public');
+              }
+              if (!fs.existsSync('build/api')) {
+                fs.mkdirSync('build/api');
+              }
+              if (!fs.existsSync('tmp')) {
+                fs.mkdirSync('tmp');
+              }
 
-            console.log('Generating iOS feature bundle')
+              fs.writeFileSync(`tmp/base.ios.${config.base_bundle_version}.bundle`, iosBase, { encoding: 'utf8' })
+              fs.writeFileSync(`tmp/base.android.${config.base_bundle_version}.bundle`, androidBase, { encoding: 'utf8' })
 
-            exec(`node_modules/dd-rn-packager/bin/rnpackager bundle --platform ios --entry-file index.ios.js --bundle-output index.ios.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
-              console.log('Generating iOS patch file')
-              const iosFeature = fs.readFileSync(`index.ios.${config.react_native_version}.bundle`, 'utf8')
-              var iosPatch = dmp.patch_make(iosBase, iosFeature)
+              fs.writeFileSync(`tmp/base.ios.${config.base_bundle_version}.mainifest`, iosManifest, { encoding: 'utf8' })
+              fs.writeFileSync(`tmp/base.android.${config.base_bundle_version}.mainifest`, androidManifest, { encoding: 'utf8' })
 
-              fs.writeFileSync(`index.ios.${config.react_native_version}.patch`, dmp.patch_toText(iosPatch), { encoding: 'utf8' })
-              console.log('Generating Android feature bundle')
-              exec(`node_modules/dd-rn-packager/bin/rnpackager bundle --platform android --entry-file index.android.js --bundle-output index.android.${config.react_native_version}.bundle`, (err, stdout, stderr) => {
-                
-                const dmp = new DiffMatchPatch()
-                dmp.Diff_Timeout = 60
-                const androidFeature = fs.readFileSync(`index.android.${config.react_native_version}.bundle`, 'utf8')
+              const commands = []
 
-                console.log('Generating Android patch file')
-                var androidPatch = dmp.patch_make(androidBase, androidFeature)
+              if (bzJson.mobile.enabled) {
+                commands.push(
+                  [`pushd mobile && npm run build-web`, 'Generating Web feature bundle'],
+                  [`pushd mobile && cp -r web/static/ ../build/bundle/`, 'Copying Web feature bundle'],
+                  [`pushd mobile && node_modules/dd-rn-packager/bin/rnpackager bundle --dev false --manifest-file ../tmp/base.ios.${config.base_bundle_version}.mainifest --platform ios --entry-file index.ios.js --bundle-output ../build/bundle/index.ios.${config.base_bundle_version}.manifest.bundle --sourcemap-output ../build/bundle/index.ios.${config.base_bundle_version}.sourcemap`, 'Building iOS'],
+                  [`pushd mobile && node_modules/dd-rn-packager/bin/rnpackager bundle --dev false --manifest-file ../tmp/base.android.${config.base_bundle_version}.mainifest --platform android --entry-file index.android.js --bundle-output ../build/bundle/index.android.${config.base_bundle_version}.manifest.bundle --sourcemap-output ../build/bundle/index.android.${config.base_bundle_version}.sourcemap`, 'Building Android']
+                )
+              } else {
+                commands.push(
+                  [``, 'Mobile build not enabled']
+                )
+              }
 
-                fs.writeFileSync(`index.android.${config.react_native_version}.patch`, dmp.patch_toText(androidPatch), { encoding: 'utf8' })
+              if (bzJson.api.enabled) {
+                commands.push(
+                  [`pushd api && npm run build`, 'Generating API scripts'],
+                  [`cp -r api/build/ build/api/`, 'Copying APIs']
+                )
+              } else {
+                commands.push(
+                  [``, 'API build not enabled']
+                )
+              }
 
-                console.log('Uploading binaries')
-                const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
-                const auth = 'Bearer ' + access_token
-                const json = {
-                  version: bzJson.version || '0.0.1',
-                  reactNativeVersion: config.react_native_version,
-                  iosBinary: dmp.patch_toText(iosPatch),
-                  androidBinary: dmp.patch_toText(androidPatch),
-                  webBinary: webBinary,
-                  webHTML: webHTML
+              if (bzJson.adminWeb.enabled) {
+                commands.push(
+                  [`pushd web/admin && npm run build`, 'Generating Admin web bundle'],
+                  [`cp -r web/admin/build/ build/site/private/`, 'Copying Admin web bundle']
+                )
+              } else {
+                commands.push(
+                  [``, 'Admin web build not enabled']
+                )
+              }
+
+              if (bzJson.attendeeWeb.enabled) {
+                commands.push(
+                  [`pushd web/attendee && npm run build`, 'Generating Attendee web bundle'],
+                  [`cp -r web/attendee/build/ build/site/public/`, 'Copying Attendee web bundle']
+                )
+              } else {
+                commands.push(
+                  [``, 'Attendee web build not enabled']
+                )
+              }
+
+              commands.push(
+                [`zip -r tmp/build.${config.base_bundle_version}.zip build/`, 'Generating zip']
+              )
+
+              const promise = new Promise((resolve, reject) => {
+                const runCommand = (idx) => {
+                  if (idx < commands.length) {
+                    console.log(commands[idx][1] + '...')
+                    exec(commands[idx][0], (err, stdout, stderr) => {
+                      if (err) {
+                        console.error(err)
+                      }
+                      if (stderr) {
+                        console.error(stderr)
+                      }
+                      runCommand(idx + 1)
+                    })
+                  } else {
+                    resolve()
+                  }
                 }
 
-                fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
-                  .then((response) => {
-                    if (response.status !== 200) {
-                      throw 'Error creating/updating feature'
-                    }
-                    return response.json()
-                  })
-                  .then((json) => {
-                    resolve(json)
-                  })
-                  .catch((err) => {
-                    console.log(err)
-                    reject(err)
-                  })
+                runCommand(0)
               })
+
+              promise
+                .then(() => {
+                  console.log('Done. Uploading to bazaar...')
+                  const zipFile = fs.readFileSync(`tmp/build.${config.base_bundle_version}.zip`)
+
+                  console.log('Uploading binaries')
+                  const featureURL = `${config.root_url}/api/features/${featureID}/binaries`
+                  const auth = 'Bearer ' + access_token
+
+                  const json = {
+                    cliVersion: pkg.version,
+                    version: bzJson.version || '0.0.1',
+                    reactNativeVersion: config.base_bundle_version,
+                    zippedPackage: new Buffer(zipFile).toString('base64')
+                  }
+
+                  fetch(featureURL, { body: JSON.stringify(json), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/json' } })
+                    .then((response) => {
+                      if (response.status !== 200) {
+                        throw 'Error creating/updating feature'
+                      }
+                      return response.json()
+                    })
+                    .then((json) => {
+                      console.log(json)
+                      resolve(json)
+                      process.exit(0)
+                    })
+                    .catch((err) => {
+                      console.log(err)
+                      reject(err)
+                    })
+                })
+                .catch((err) => {
+                  console.log(err)
+                  process.exit(-1)
+                })
             })
           })
 
@@ -159,7 +255,7 @@ const requestAccessToken = (username, refresh_token) =>
     const tokenURL = config.identity.root_url + '/access/tokens'
     const form = { grant_type: 'refresh_token', refresh_token: refresh_token }
     const auth = 'Basic ' + new Buffer(config.identity.cli.identifier + ':' + config.identity.cli.secret).toString('base64')
-    fetch(tokenURL , { body: formurlencoded(form), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/x-www-form-urlencoded' } })
+    fetch(tokenURL, { body: formurlencoded(form), method: 'POST', headers: { 'Authorization': auth, 'Content-type': 'application/x-www-form-urlencoded' } })
       .then((response) => {
         if (response.status !== 200) {
           throw 'Invalid credentials. Please run bz login'

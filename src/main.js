@@ -13,6 +13,7 @@ const publishCommand = require('./publish');
 const loginCommand = require('./login');
 const installCommand = require('./install');
 const uninstallCommand = require('./uninstall');
+const migrateCommand = require('./migrate');
 
 const NiceError = require('./utils/nice_error');
 // Mapping from command line strings to modules. To add a new command,
@@ -26,7 +27,8 @@ const commands = {
   version: versionCommand,
   publish: publishCommand,
   install: installCommand,
-  uninstall: uninstallCommand
+  uninstall: uninstallCommand,
+  migrate: migrateCommand
 };
 
 const programName = path.basename(process.argv[1]);
@@ -62,8 +64,9 @@ if (!command) {
 
 const done = (err) => {
   if (err) {
+    throw err;
     const errMsg = (err instanceof NiceError) ?
-            err.niceString({ contextSize: 2 }) : err.message;
+      err.niceString({ contextSize: 2 }) : err.message;
     console.error(chalk.red.bold(errMsg));
     process.exit(1);
   } else {

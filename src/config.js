@@ -1,6 +1,7 @@
 module.exports = {
   react_version: '15.4.1',
   react_native_version: '0.40.0',
+  base_bundle_version: '0.40.10',
   root_url: 'https://bazaar.doubledutch.me',
   signup_url: 'https://bazaar.doubledutch.me/',
   identity: {

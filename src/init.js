@@ -13,11 +13,13 @@ const config = require('./config')
 
 const reactNativeVersion = config.react_native_version
 const reactVersion = config.react_version
+const baseBundleVersion = config.base_bundle_version
 
 const makePackageJSON = (projectName) => `\
 {
   "name": "${projectName}",
   "version": "0.0.1",
+  "baseBundleVersion": "${baseBundleVersion}",
   "private": true,
   "scripts": {
     "start": "react-native start",
@@ -42,28 +44,49 @@ const makePackageJSON = (projectName) => `\
 
 const bazaarSH = (projectName) => `\
 #!/usr/bin/env bash
+date
 echo '${projectName}'
-npm install
+yarn install | npm install
 git clone https://github.com/doubledutch/bazaar-sample.git tmp
 mv tmp/* ./
 cd tmp
 node ../node_modules/react-native-cli/index.js init ${projectName} --version react-native@${reactNativeVersion}
 cd ..
-mkdir ios
-mv tmp/${projectName}/ios/* ios/
-mkdir android
-mv tmp/${projectName}/android/* android/
+mkdir mobile
+mkdir mobile/ios
+mv tmp/${projectName}/ios/* mobile/ios/
+mkdir mobile/android
+mv tmp/${projectName}/android/* mobile/android/
+cd mobile
 sed -i '' 's/bazaar_sample/${projectName}/' package.json
 sed -i '' 's/bazaar_sample/${projectName}/' index.ios.js
 sed -i '' 's/bazaar_sample/${projectName}/' index.android.js
-npm install
-rm -rf tmp
+sed -i '' 's/bazaar_sample/${projectName}/' index.web.js
+yarn install | npm install
 rm -rf node_modules/bazaar-client/node_modules/react-native/
+echo 'Fixing up xcode to use DD packager'
+sed -i.bak s/node_modules\\\\/react-native\\\\/packager/node_modules\\\\/dd-rn-packager\\\\/react-native\\\\/packager/g ios/${projectName}.xcodeproj/project.pbxproj
+sed -i.bak s/packager\\\\/launchPackager.command/..\\\\/dd-rn-packager\\\\/react-native\\\\/packager\\\\/launchPackager.command/g node_modules/react-native/React/React.xcodeproj/project.pbxproj
+cd ..
+rm -rf tmp
+echo Installing dependencies
+pushd mobile
+yarn install | npm install
+popd
+pushd web/admin
+yarn install | npm install
+popd
+pushd web/attendee
+yarn install | npm install
+popd
+date
 `;
 
 const makeFeatureJSON = (projectName) => `\
 {
   "name": "${projectName}",
+  "version": "0.0.1",
+  "baseBundleVersion": "${config.base_bundle_version}",
   "description": "Description for ${projectName}",
   "collections": [
     {
@@ -73,7 +96,27 @@ const makeFeatureJSON = (projectName) => `\
       "name": "some_collection",
       "userWriteAccess": true
     }
-  ]
+  ],
+  "components": {
+    "mobile": {
+      "enabled": true,
+      "build": true
+    },
+    "api": {
+      "enabled": true,
+      "build": true
+    },
+    "adminWeb": {
+      "enabled": true,
+      "build": true,
+      "customURL": ""
+    },
+    "attendeeWeb": {
+      "enabled": true,
+      "build": true,
+      "customURL": ""
+    }
+  }
 }
 `;
 
@@ -83,8 +126,9 @@ node_modules
 
 const parseArguments = (args) => {
   const parser = new argparse.ArgumentParser({ prog: 'bz init' });
-  parser.addArgument([ 'projectName' ],
-    { action: 'store',
+  parser.addArgument(['projectName'],
+    {
+      action: 'store',
       help: 'Name of directory to create. Defaults to current directory',
     }
   );
@@ -198,19 +242,25 @@ const run = (args) =>
         // Before we create things, check if the directory is empty
         const dirWasPopulated = fs.readdirSync(process.cwd()).length !== 0;
         populateDir(projectName, dirWasPopulated, chdirTo, dirName);
-        
-        console.log(`Initializing project`)
 
-        exec(`sh bazaar.sh`, function(err, stdout, stderr) {
-          if (err && err.length) {
-            console.log(err)
-            reject(err)
-          } else if (stderr && stderr.length) {
-            console.log(stderr)
-            reject(stderr)
-          } else {
-            console.log('Finished creating project')
-          }
+        console.log(`Initializing project (this may take a few minutes...)`)
+
+        const p = exec(`sh bazaar.sh`, function (err, stdout, stderr) {
+          console.log('Finished creating project')
+          setTimeout(() => {
+            if (err && err.length) {
+              //console.log(err)
+              reject(err)
+            } else if (stderr && stderr.length) {
+              //console.log(stderr)
+              reject(stderr)
+            } else {
+              resolve('Finished creating project')
+            }
+          }, 2000)
+        })
+        p.stdout.on('data', function (data) {
+          process.stdout.write('init: ' + data);
         })
       })
   })
