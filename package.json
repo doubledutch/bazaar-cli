@@ -29,6 +29,7 @@
     "node-fetch": "^1.6.3",
     "node-zip": "^1.1.1",
     "open": "0.0.5",
+    "prompt": "^1.0.0",
     "rethinkdb": "^2.1.1",
     "toml": "^2.3.0"
   },

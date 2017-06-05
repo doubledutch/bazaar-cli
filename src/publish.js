@@ -122,7 +122,7 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
 
               const commands = []
 
-              if (bzJson.mobile.enabled) {
+              if (bzJson.components.mobile.enabled) {
                 commands.push(
                   [`pushd mobile && npm run build-web`, 'Generating Web feature bundle'],
                   [`pushd mobile && cp -r web/static/ ../build/bundle/`, 'Copying Web feature bundle'],
@@ -135,7 +135,7 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
                 )
               }
 
-              if (bzJson.api.enabled) {
+              if (bzJson.components.api.enabled) {
                 commands.push(
                   [`pushd api && npm run build`, 'Generating API scripts'],
                   [`cp -r api/build/ build/api/`, 'Copying APIs']
@@ -146,7 +146,7 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
                 )
               }
 
-              if (bzJson.adminWeb.enabled) {
+              if (bzJson.components.adminWeb.enabled) {
                 commands.push(
                   [`pushd web/admin && npm run build`, 'Generating Admin web bundle'],
                   [`cp -r web/admin/build/ build/site/private/`, 'Copying Admin web bundle']
@@ -157,7 +157,7 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
                 )
               }
 
-              if (bzJson.attendeeWeb.enabled) {
+              if (bzJson.components.attendeeWeb.enabled) {
                 commands.push(
                   [`pushd web/attendee && npm run build`, 'Generating Attendee web bundle'],
                   [`cp -r web/attendee/build/ build/site/public/`, 'Copying Attendee web bundle']

@@ -10,6 +10,7 @@ const checkProjectName = require('./utils/check-project-name');
 const rethrow = require('./utils/rethrow');
 const exec = require('child_process').exec
 const config = require('./config')
+const prompt = require('prompt')
 
 const reactNativeVersion = config.react_native_version
 const reactVersion = config.react_version
@@ -42,13 +43,13 @@ const makePackageJSON = (projectName) => `\
 }
 `;
 
-const bazaarSH = (projectName) => `\
+const bazaarSH = (projectName, buildSettings) => `\
 #!/usr/bin/env bash
 date
 echo '${projectName}'
 yarn install | npm install
 git clone https://github.com/doubledutch/bazaar-sample.git tmp
-mv tmp/* ./
+shopt -s dotglob && mv tmp/* ./
 cd tmp
 node ../node_modules/react-native-cli/index.js init ${projectName} --version react-native@${reactNativeVersion}
 cd ..
@@ -58,6 +59,7 @@ mv tmp/${projectName}/ios/* mobile/ios/
 mkdir mobile/android
 mv tmp/${projectName}/android/* mobile/android/
 cd mobile
+ln -h ../bazaar.json
 sed -i '' 's/bazaar_sample/${projectName}/' package.json
 sed -i '' 's/bazaar_sample/${projectName}/' index.ios.js
 sed -i '' 's/bazaar_sample/${projectName}/' index.android.js
@@ -71,18 +73,18 @@ cd ..
 rm -rf tmp
 echo Installing dependencies
 pushd mobile
-yarn install | npm install
+${buildSettings.mobile ? 'yarn install | npm install' : ''}
 popd
 pushd web/admin
-yarn install | npm install
+${buildSettings.adminWeb ? 'yarn install | npm install' : ''}
 popd
 pushd web/attendee
-yarn install | npm install
+${buildSettings.attendeeWeb ? 'yarn install | npm install' : ''}
 popd
 date
 `;
 
-const makeFeatureJSON = (projectName) => `\
+const makeFeatureJSON = (projectName, buildSettings) => `\
 {
   "name": "${projectName}",
   "version": "0.0.1",
@@ -99,20 +101,20 @@ const makeFeatureJSON = (projectName) => `\
   ],
   "components": {
     "mobile": {
-      "enabled": true,
+      "enabled": ${buildSettings.mobile},
       "build": true
     },
     "api": {
-      "enabled": true,
+      "enabled": ${buildSettings.api},
       "build": true
     },
     "adminWeb": {
-      "enabled": true,
+      "enabled": ${buildSettings.adminWeb},
       "build": true,
       "customURL": ""
     },
     "attendeeWeb": {
-      "enabled": true,
+      "enabled": ${buildSettings.attendeeWeb},
       "build": true,
       "customURL": ""
     }
@@ -172,7 +174,7 @@ const maybeChdir = (chdirTo) => {
   }
 };
 
-const populateDir = (projectName, dirWasPopulated, chdirTo, dirName) => {
+const populateDir = (projectName, dirWasPopulated, chdirTo, dirName, buildSettings) => {
   const niceDir = chdirTo ? `${dirName}/` : '';
 
   // Default permissions
@@ -202,7 +204,7 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName) => {
   if (!fileExists('bazaar.json')) {
     fs.appendFileSync(
       'bazaar.json',
-      makeFeatureJSON(projectName),
+      makeFeatureJSON(projectName, buildSettings),
       permissionGeneral
     );
     console.info(`Created ${niceDir}bazaar.json`);
@@ -213,7 +215,7 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName) => {
   if (!fileExists('bazaar.sh')) {
     fs.appendFileSync(
       'bazaar.sh',
-      bazaarSH(projectName),
+      bazaarSH(projectName, buildSettings),
       permissionGeneral
     );
     console.info(`Created ${niceDir}bazaar.sh`);
@@ -232,35 +234,97 @@ const run = (args) =>
           process.cwd(),
           fs.readdirSync('.')
         );
-        const projectName = check.projectName;
-        const dirName = check.dirName;
-        const chdirTo = check.chdirTo;
-        const createDir = check.createDir;
-        maybeMakeDir(createDir, dirName);
-        maybeChdir(chdirTo);
 
-        // Before we create things, check if the directory is empty
-        const dirWasPopulated = fs.readdirSync(process.cwd()).length !== 0;
-        populateDir(projectName, dirWasPopulated, chdirTo, dirName);
-
-        console.log(`Initializing project (this may take a few minutes...)`)
-
-        const p = exec(`sh bazaar.sh`, function (err, stdout, stderr) {
-          console.log('Finished creating project')
-          setTimeout(() => {
-            if (err && err.length) {
-              //console.log(err)
-              reject(err)
-            } else if (stderr && stderr.length) {
-              //console.log(stderr)
-              reject(stderr)
-            } else {
-              resolve('Finished creating project')
-            }
-          }, 2000)
+        prompt.start({
+          message: '\0',
+          delimiter: ' '
         })
-        p.stdout.on('data', function (data) {
-          process.stdout.write('init: ' + data);
+
+
+        // "mobile": {
+        //   "enabled": true,
+        //   "build": true
+        // },
+        // "api": {
+        //   "enabled": true,
+        //   "build": true
+        // },
+        // "adminWeb": {
+        //   "enabled": true,
+        //   "build": true,
+        //   "customURL": ""
+        // },
+        // "attendeeWeb": {
+        //   "enabled": true,
+        //   "build": true,
+        //   "customURL": ""
+        // }
+
+        prompt.get([
+          {
+            name: 'mobile',
+            description: 'Create mobile template',
+            type: 'boolean',
+            required: true,
+            default: 't'
+          },
+          {
+            name: 'api',
+            description: 'Create API/lambda template',
+            type: 'boolean',
+            required: true,
+            default: 't'
+          },
+          {
+            name: 'adminWeb',
+            description: 'Create admin web template',
+            type: 'boolean',
+            required: true,
+            default: 't'
+          },
+          {
+            name: 'attendeeWeb',
+            description: 'Create attendee web template',
+            type: 'boolean',
+            required: true,
+            default: 'f'
+          }
+        ], function (err, buildSettings) {
+          if (err) {
+            process.exit(-1)
+            return
+          }
+
+          const projectName = check.projectName;
+          const dirName = check.dirName;
+          const chdirTo = check.chdirTo;
+          const createDir = check.createDir;
+          maybeMakeDir(createDir, dirName);
+          maybeChdir(chdirTo);
+
+          // Before we create things, check if the directory is empty
+          const dirWasPopulated = fs.readdirSync(process.cwd()).length !== 0;
+          populateDir(projectName, dirWasPopulated, chdirTo, dirName, buildSettings);
+
+          console.log(`Initializing project (this may take a few minutes...)`)
+
+          const p = exec(`sh bazaar.sh`, function (err, stdout, stderr) {
+            console.log('Finished creating project')
+            setTimeout(() => {
+              if (err && err.length) {
+                //console.log(err)
+                reject(err)
+              } else if (stderr && stderr.length) {
+                //console.log(stderr)
+                reject(stderr)
+              } else {
+                resolve('Finished creating project')
+              }
+            }, 2000)
+          })
+          p.stdout.on('data', function (data) {
+            process.stdout.write('init: ' + data);
+          })
         })
       })
   })
