@@ -1,4 +1,5 @@
 # New Project Creation
+```
 > npm install -g bazaar-cli@0.40.11
 > cd to-your-development-folder
 > bz init project_name # this will create a new project with project_name
@@ -6,19 +7,26 @@ Follow the prompts for which sample environments you want set up (mobile, admin,
 > cd project_name/mobile
 > npm run ios # this will boot the iOS simulator and start the packager
 > vi src/home-view.js # edit this file and save, then cmd+R in simulator to reload
+```
 
 ## If using the Bazaar backend services
+```
 > vi bazaar.json
 Add collections and permissions (documented below) you want created
 When finished
 > bz publish scheme
+```
 
 ## Installing to an event
+```
 > bz install sample-event-id
+```
 
 ## Publishing binaries
 When your changes are ready to go live (update the version in bazaar.json)
+```
 > bz publish binary
+```
 
 # Collection permissions
 1. globalReadAccess - any user can read any document (per event) in the collection
