@@ -49,6 +49,7 @@ date
 echo '${projectName}'
 yarn install | npm install
 git clone https://github.com/doubledutch/bazaar-sample.git tmp
+rm -rf tmp/.git
 shopt -s dotglob && mv tmp/* ./
 cd tmp
 node ../node_modules/react-native-cli/index.js init ${projectName} --version react-native@${reactNativeVersion}
