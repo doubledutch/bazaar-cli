@@ -1,6 +1,6 @@
 # New Project Creation
 ```
-> npm install -g bazaar-cli@0.40.11
+> npm install -g bazaar-cli@0.46.0
 > cd to-your-development-folder
 > bz init project_name # this will create a new project with project_name
 Follow the prompts for which sample environments you want set up (mobile, admin, api, etc.)
