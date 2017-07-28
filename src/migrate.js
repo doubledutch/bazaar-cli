@@ -10,6 +10,7 @@ const checkProjectName = require('./utils/check-project-name');
 const rethrow = require('./utils/rethrow');
 const exec = require('child_process').exec
 const config = require('./config')
+const fetch = require('node-fetch')
 
 const reactNativeVersion = config.react_native_version
 const reactVersion = config.react_version
@@ -128,6 +129,19 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName) => {
   }
 };
 
+const isVersionLess = (version) => {
+  const baseVersionParts = config.base_bundle_version.split('.').map((i) => parseInt(i, 10))
+  const projectVersionParts = version.split('.').map((i) => parseInt(i, 10))
+
+  for (var i = 0; i < baseVersionParts.length; ++i) {
+    if (projectVersionParts[i] < baseVersionParts[i]) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const run = (args) =>
   new Promise((resolve, reject) => {
     Promise.resolve(args)
@@ -141,8 +155,70 @@ const run = (args) =>
 
         try {
           if (fs.existsSync('mobile')) {
-            console.error('Project cannot be migrated')
-            process.exit(-1)
+            // We are a non-structural update
+            var bazaarJson = JSON.parse(fs.readFileSync('bazaar.json', 'utf8'))
+            if (isVersionLess(bazaarJson.baseBundleVersion)) {
+              console.log('Project can be updated')
+              var packageJson = JSON.parse(fs.readFileSync('mobile/package.json', 'utf8'))
+              fetch('https://raw.githubusercontent.com/doubledutch/bazaar-sample/master/mobile/package.json')
+                .then((res) => res.json())
+                .then((samplePackage) => {
+                  const versions = Object.assign({}, samplePackage.dependencies, samplePackage.devDependencies)
+
+                  Object.keys(packageJson.dependencies).forEach((mod) => {
+                    // Move to dev if it is there
+                    if (samplePackage.devDependencies[mod]) {
+                      delete packageJson.dependencies[mod]
+                    } else if (versions[mod]) {
+                      console.log(`Updating ${mod} to ${versions[mod]}`)
+                      packageJson.dependencies[mod] = versions[mod]
+                    }
+                  })
+
+                  Object.keys(packageJson.devDependencies).forEach((mod) => {
+                    if (samplePackage.dependencies[mod]) {
+                      delete packageJson.devDependencies[mod]
+                    } else if (versions[mod]) {
+                      console.log(`Updating ${mod} to ${versions[mod]}`)
+                      packageJson.devDependencies[mod] = versions[mod]
+                    }
+                  })
+
+                  Object.keys(samplePackage.dependencies).forEach((mod) => {
+                    if (!packageJson[mod]) {
+                      console.log(`Adding  ${mod} @ ${versions[mod]}`)
+                      packageJson.dependencies[mod] = samplePackage.dependencies[mod]
+                    }
+                  })
+
+                  Object.keys(samplePackage.devDependencies).forEach((mod) => {
+                    if (!packageJson[mod]) {
+                      console.log(`Adding  ${mod} @ ${versions[mod]}`)
+                      packageJson.devDependencies[mod] = samplePackage.devDependencies[mod]
+                    }
+                  })
+
+                  bazaarJson.baseBundleVersion = config.base_bundle_version
+
+                  fs.writeFileSync('mobile/package.json', JSON.stringify(packageJson, 2, 2), 'utf8')
+                  fs.writeFileSync('bazaar.json', JSON.stringify(bazaarJson, 2, 2), 'utf8')
+                  fs.unlinkSync('mobile/package-lock.json')
+
+                  console.log('Removing older packages')
+                  exec(`rm -rf mobile/node_modules`, function (err, stdout, stderr) {
+
+                    console.log('Installing newer packages')
+                    exec(`cd mobile && npm install`, function (err, stdout, stderr) {
+                      console.log('You\'re all set!')
+                      process.exit(0)
+                    })
+                  })
+                })
+            } else {
+              console.error('Project cannot be migrated')
+              process.exit(-1)
+            }
+            return
           }
 
           if (!fileExists('migrate.sh')) {

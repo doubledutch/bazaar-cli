@@ -117,17 +117,41 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
               fs.writeFileSync(`tmp/base.ios.${config.base_bundle_version}.bundle`, iosBase, { encoding: 'utf8' })
               fs.writeFileSync(`tmp/base.android.${config.base_bundle_version}.bundle`, androidBase, { encoding: 'utf8' })
 
-              fs.writeFileSync(`tmp/base.ios.${config.base_bundle_version}.mainifest`, iosManifest, { encoding: 'utf8' })
-              fs.writeFileSync(`tmp/base.android.${config.base_bundle_version}.mainifest`, androidManifest, { encoding: 'utf8' })
+              fs.writeFileSync(`tmp/base.ios.${config.base_bundle_version}.manifest`, iosManifest, { encoding: 'utf8' })
+              fs.writeFileSync(`tmp/base.android.${config.base_bundle_version}.manifest`, androidManifest, { encoding: 'utf8' })
 
               const commands = []
 
               if (bzJson.components.mobile.enabled) {
                 commands.push(
-                  [`pushd mobile && npm run build-web`, 'Generating Web feature bundle'],
-                  [`pushd mobile && cp -r web/static/ ../build/bundle/`, 'Copying Web feature bundle'],
-                  [`pushd mobile && node_modules/dd-rn-packager/bin/rnpackager bundle --dev false --manifest-file ../tmp/base.ios.${config.base_bundle_version}.mainifest --platform ios --entry-file index.ios.js --bundle-output ../build/bundle/index.ios.${config.base_bundle_version}.manifest.bundle --sourcemap-output ../build/bundle/index.ios.${config.base_bundle_version}.sourcemap`, 'Building iOS'],
-                  [`pushd mobile && node_modules/dd-rn-packager/bin/rnpackager bundle --dev false --manifest-file ../tmp/base.android.${config.base_bundle_version}.mainifest --platform android --entry-file index.android.js --bundle-output ../build/bundle/index.android.${config.base_bundle_version}.manifest.bundle --sourcemap-output ../build/bundle/index.android.${config.base_bundle_version}.sourcemap`, 'Building Android']
+                  //[`pushd mobile && npm run build-web`, 'Generating Web feature bundle'],
+                  //[`pushd mobile && cp -r web/static/ ../build/bundle/`, 'Copying Web feature bundle'],
+                  [`
+                    pushd mobile &&
+                    node node_modules/dd-rn-packager/react-native/local-cli/cli.js bundle 
+                    --dev false
+                    --manifest-file ../tmp/base.ios.${config.base_bundle_version}.manifest
+                    --manifest-output ../build/bundle/index.ios.${config.base_bundle_version}.manifest
+                    --platform ios
+                    --entry-file index.ios.js
+                    --bundle-output ../build/bundle/index.ios.${config.base_bundle_version}.manifest.bundle
+                    --sourcemap-output ../build/bundle/index.ios.${config.base_bundle_version}.sourcemap
+                    --post-process-modules $PWD/node_modules/dd-rn-packager/process.js
+                    --create-module-id-factory $PWD/node_modules/dd-rn-packager/idfactory.js
+                    `, 'Building iOS'],
+                  [`
+                    pushd mobile &&
+                    node node_modules/dd-rn-packager/react-native/local-cli/cli.js bundle 
+                    --dev false
+                    --manifest-file ../tmp/base.android.${config.base_bundle_version}.manifest
+                    --manifest-output ../build/bundle/index.android.${config.base_bundle_version}.manifest
+                    --platform android
+                    --entry-file index.android.js
+                    --bundle-output ../build/bundle/index.android.${config.base_bundle_version}.manifest.bundle
+                    --sourcemap-output ../build/bundle/index.android.${config.base_bundle_version}.sourcemap
+                    --post-process-modules $PWD/node_modules/dd-rn-packager/process.js
+                    --create-module-id-factory $PWD/node_modules/dd-rn-packager/idfactory.js
+                    `, 'Building Android']
                 )
               } else {
                 commands.push(
@@ -176,7 +200,7 @@ const publishBinary = (accountConfig, bzJson, featureID) => {
                 const runCommand = (idx) => {
                   if (idx < commands.length) {
                     console.log(commands[idx][1] + '...')
-                    exec(commands[idx][0], (err, stdout, stderr) => {
+                    exec(commands[idx][0].replace(/\n/g, ''), (err, stdout, stderr) => {
                       if (err) {
                         console.error(err)
                       }
