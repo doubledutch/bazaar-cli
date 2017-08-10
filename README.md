@@ -11,6 +11,15 @@
 # edit this file and save, then cmd+R in simulator to reload
 ```
 
+## Login
+Bazaar CLI requires a CMS login (currently with SuperAdmin role).
+
+```
+> bz login
+# follow prompts to log in using CMS creds
+```
+
+
 ## If using the Bazaar backend services
 ```
 > vi bazaar.json
