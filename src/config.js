@@ -7,9 +7,9 @@ module.exports = {
   identity: {
     root_url: 'https://us-identity.doubledutch.me',
     cli: {
-      identifier: "V522LkZVrj2wG7VJZnzMqz",
-      secret: "XzeXiEtpHqeQccPkY9qMa9P6eMy3m2qkXhw88kWWeJcZ",
-      id: "uB8qYsjbpeYrSLS4XrZBtg"
+      identifier: "2PJo2PmCAb8S3RD8MuSJpg",
+      secret: "XcfoLiuzSNRgVbSH7ZZCmjhyqSqwr6iNApXc7LNTMFak",
+      id: "2PJo2PmCAb8S3RD8MuSJpg"
     }
   }
 }

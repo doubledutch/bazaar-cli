@@ -130,8 +130,8 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName) => {
 };
 
 const isVersionLess = (version) => {
-  const baseVersionParts = config.base_bundle_version.split('.').map((i) => parseInt(i, 10))
-  const projectVersionParts = version.split('.').map((i) => parseInt(i, 10))
+  const baseVersionParts = (config.base_bundle_version).split('.').map((i) => parseInt(i, 10))
+  const projectVersionParts = (version || '0.0.0').split('.').map((i) => parseInt(i, 10))
 
   for (var i = 0; i < baseVersionParts.length; ++i) {
     if (projectVersionParts[i] < baseVersionParts[i]) {
