@@ -27,18 +27,11 @@ const makePackageJSON = (projectName) => `\
     "run" : "node_modules/react-native/local-cli/cli.js run-ios"
   },
   "dependencies": {
-    "@horizon/client": "^2.0.0",
-    "bazaar-client": "^0.0.9",
     "react": "${reactVersion}",
-    "react-addons-update": "${reactVersion}",
     "react-native": "${reactNativeVersion}",
     "react-native-cli": "^2.0.1"
   },
   "devDependencies": {
-    "babel-plugin-add-module-exports": "^0.2.1",
-    "babel-plugin-transform-runtime": "^6.15.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-preset-es2015-loose": "^8.0.0"
   }
 }
 `;
@@ -71,7 +64,7 @@ echo 'Fixing up xcode to use DD packager'
 sed -i.bak s/node_modules\\\\/react-native\\\\/packager/node_modules\\\\/dd-rn-packager\\\\/react-native\\\\/packager/g ios/${projectName}.xcodeproj/project.pbxproj
 sed -i.bak s/packager\\\\/launchPackager.command/..\\\\/dd-rn-packager\\\\/react-native\\\\/packager\\\\/launchPackager.command/g node_modules/react-native/React/React.xcodeproj/project.pbxproj
 cd ..
-rm -rf tmp
+echo rm -rf tmp
 echo Installing dependencies
 pushd mobile
 ${buildSettings.mobile ? 'yarn install | npm install' : ''}
