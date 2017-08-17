@@ -309,11 +309,8 @@ const saveConfig = (username, tokenResponse) => {
 
 const saveFeatureConfig = (feature) => {
   const featureConfig = 'bazaar.json'
-  if (fileExists(featureConfig)) {
-    fs.unlink(featureConfig)
-  }
 
-  fs.appendFileSync(
+  fs.writeFileSync(
     featureConfig,
     JSON.stringify(feature, null, 2),
     permissionGeneral

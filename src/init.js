@@ -36,11 +36,17 @@ const makePackageJSON = (projectName) => `\
 }
 `;
 
+const nativeModules = ['react-native-camera', 'react-native-fetch-blob', 'react-native-video', 'react-native-youtube']
+const makeLinks = () => nativeModules.map(makeLink).join('\n')
+const makeLink = (module) =>
+  `yarn add ${module}\n` + `node node_modules/react-native/local-cli/cli.js link ${module}`
+
 const bazaarSH = (projectName, buildSettings) => `\
 #!/usr/bin/env bash
 date
+echo Yarn required
 echo '${projectName}'
-yarn install | npm install
+yarn install
 git clone https://github.com/doubledutch/bazaar-sample.git tmp
 rm -rf tmp/.git
 shopt -s dotglob && mv tmp/* ./
@@ -52,13 +58,14 @@ mkdir mobile/ios
 mv tmp/${projectName}/ios/* mobile/ios/
 mkdir mobile/android
 mv tmp/${projectName}/android/* mobile/android/
+mv bazaar.json mobile/bazaar.json
+ln -s mobile/bazaar.json bazaar.json
 cd mobile
-ln -h ../bazaar.json
 sed -i '' 's/bazaar_sample/${projectName}/' package.json
 sed -i '' 's/bazaar_sample/${projectName}/' index.ios.js
 sed -i '' 's/bazaar_sample/${projectName}/' index.android.js
 sed -i '' 's/bazaar_sample/${projectName}/' index.web.js
-yarn install | npm install
+yarn install
 rm -rf node_modules/bazaar-client/node_modules/react-native/
 echo 'Fixing up xcode to use DD packager'
 sed -i.bak s/node_modules\\\\/react-native\\\\/packager/node_modules\\\\/dd-rn-packager\\\\/react-native\\\\/packager/g ios/${projectName}.xcodeproj/project.pbxproj
@@ -67,15 +74,18 @@ cd ..
 echo rm -rf tmp
 echo Installing dependencies
 pushd mobile
-${buildSettings.mobile ? 'yarn install | npm install' : ''}
+${buildSettings.mobile ? 'yarn install' : ''}
+${buildSettings.mobile ? makeLinks() : ''}
 popd
 pushd web/admin
-${buildSettings.adminWeb ? 'yarn install | npm install' : ''}
+${buildSettings.adminWeb ? 'yarn install' : ''}
 popd
 pushd web/attendee
-${buildSettings.attendeeWeb ? 'yarn install | npm install' : ''}
+${buildSettings.attendeeWeb ? 'yarn install' : ''}
 popd
 date
+bz publish schema
+bz install sample-event-id
 `;
 
 const makeFeatureJSON = (projectName, buildSettings) => `\
