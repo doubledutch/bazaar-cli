@@ -8,7 +8,7 @@ const process = require('process');
 const argparse = require('argparse');
 const checkProjectName = require('./utils/check-project-name');
 const rethrow = require('./utils/rethrow');
-const exec = require('child_process').exec
+const spawn = require('child_process').spawn
 const config = require('./config')
 const prompt = require('prompt')
 
@@ -39,7 +39,7 @@ const makePackageJSON = (projectName) => `\
 const nativeModules = ['react-native-camera', 'react-native-fetch-blob', 'react-native-video', 'react-native-youtube']
 const makeLinks = () => nativeModules.map(makeLink).join('\n')
 const makeLink = (module) =>
-  `yarn add ${module}\n` + `node node_modules/react-native/local-cli/cli.js link ${module}`
+  `echo Adding ${module}...\n` + `yarn add ${module}\n` + `echo Linking ${module}...\n` + `node node_modules/react-native/local-cli/cli.js link ${module}`
 
 const bazaarSH = (projectName, buildSettings) => `\
 #!/usr/bin/env bash
@@ -59,7 +59,6 @@ mv tmp/${projectName}/ios/* mobile/ios/
 mkdir mobile/android
 mv tmp/${projectName}/android/* mobile/android/
 mv bazaar.json mobile/bazaar.json
-ln -s mobile/bazaar.json bazaar.json
 cd mobile
 sed -i '' 's/bazaar_sample/${projectName}/' package.json
 sed -i '' 's/bazaar_sample/${projectName}/' index.ios.js
@@ -84,8 +83,6 @@ pushd web/attendee
 ${buildSettings.attendeeWeb ? 'yarn install' : ''}
 popd
 date
-bz publish schema
-bz install sample-event-id
 `;
 
 const makeFeatureJSON = (projectName, buildSettings) => `\
@@ -187,6 +184,11 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName, buildSettin
     mode: 0o666,
   };
 
+  const permissionExec = {
+    encoding: 'utf8',
+    mode: 0o777,    
+  }
+
   const permissionSecret = {
     encoding: 'utf8',
     mode: 0o600, // Secrets are put in this config, so set it user, read/write only
@@ -220,7 +222,7 @@ const populateDir = (projectName, dirWasPopulated, chdirTo, dirName, buildSettin
     fs.appendFileSync(
       'bazaar.sh',
       bazaarSH(projectName, buildSettings),
-      permissionGeneral
+      permissionExec
     );
     console.info(`Created ${niceDir}bazaar.sh`);
   } else {
@@ -312,22 +314,19 @@ const run = (args) =>
 
           console.log(`Initializing project (this may take a few minutes...)`)
 
-          const p = exec(`sh bazaar.sh`, function (err, stdout, stderr) {
-            console.log('Finished creating project')
-            setTimeout(() => {
-              if (err && err.length) {
-                //console.log(err)
-                reject(err)
-              } else if (stderr && stderr.length) {
-                //console.log(stderr)
-                reject(stderr)
-              } else {
+          spawn('./bazaar.sh', [], {shell: true, stdio: 'inherit'})
+          .on('exit', (code, signal) => {
+
+            fs.symlinkSync('mobile/bazaar.json', 'bazaar.json')
+
+            spawn('bz', ['publish', 'schema'], {shell: true, stdio: 'inherit'})
+            .on('exit', () => {
+              spawn('bz', ['install', 'sample-event-id'], {shell: true, stdio: 'inherit'})
+              .on('exit', () => {
+                console.log('Finished creating project')
                 resolve('Finished creating project')
-              }
-            }, 2000)
-          })
-          p.stdout.on('data', function (data) {
-            process.stdout.write('init: ' + data);
+              })
+            })
           })
         })
       })
