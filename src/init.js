@@ -11,6 +11,7 @@ const rethrow = require('./utils/rethrow');
 const spawn = require('child_process').spawn
 const config = require('./config')
 const prompt = require('prompt')
+const { enforceYarnInstallation } = require('./utils/yarn')
 
 const reactNativeVersion = config.react_native_version
 const reactVersion = config.react_version
@@ -44,7 +45,6 @@ const makeLink = (module) =>
 const bazaarSH = (projectName, buildSettings) => `\
 #!/usr/bin/env bash
 date
-echo Yarn required
 echo '${projectName}'
 yarn install
 git clone https://github.com/doubledutch/bazaar-sample.git tmp
@@ -235,6 +235,8 @@ const run = (args) =>
     Promise.resolve(args)
       .then(parseArguments)
       .then((parsed) => {
+        enforceYarnInstallation()
+
         const check = checkProjectName(
           parsed.projectName,
           process.cwd(),
