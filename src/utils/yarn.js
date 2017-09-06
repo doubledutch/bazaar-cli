@@ -30,7 +30,8 @@ or...
 
   brew install yarn --without-node # if using nvm or similar
 
- See https://yarnpkg.com/en/docs/install#mac-tab for details
+See https://yarnpkg.com/en/docs/install for details, or installation on other
+operating systems.
 `
 
 const wrongVersionMessage = `
@@ -39,7 +40,7 @@ const wrongVersionMessage = `
   brew update
   brew upgrade yarn
 
-See https://yarnpkg.com for details
+See https://yarnpkg.com for details, or installation on other operating systems.
 `
 
 function enforceYarnInstallation() {
