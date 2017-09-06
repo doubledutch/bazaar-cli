@@ -96,7 +96,7 @@ const makeFeatureJSON = (projectName, buildSettings) => `\
       "description": "test",
       "globalReadAccess": false,
       "globalWriteAccess": false,
-      "name": "some_collection",
+      "name": "sample_collection",
       "userWriteAccess": true
     }
   ],
