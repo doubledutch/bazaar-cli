@@ -81,7 +81,7 @@ const requestAccessToken = (username, refresh_token) =>
 
 const saveConfig = (username, tokenResponse) => {
   if (fileExists(bzConfig)) {
-    fs.unlink(bzConfig)
+    fs.unlinkSync(bzConfig)
   }
 
   fs.appendFileSync(
@@ -124,7 +124,7 @@ const run = (args) =>
         const bazaarJSON = JSON.parse(fs.readFileSync('bazaar.json', 'utf8'))
         var bazaarFeatureID = null
         if (bazaarJSON.id) {
-          console.log('Installing feature to event')
+          console.log('Uninstalling feature from event')
         } else {
           console.log('Feature not published. Please publish the schema first')
           return

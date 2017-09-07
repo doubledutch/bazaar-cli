@@ -297,7 +297,7 @@ const requestAccessToken = (username, refresh_token) =>
 
 const saveConfig = (username, tokenResponse) => {
   if (fileExists(bzConfig)) {
-    fs.unlink(bzConfig)
+    fs.unlinkSync(bzConfig)
   }
 
   fs.appendFileSync(

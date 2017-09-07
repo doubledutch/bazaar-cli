@@ -52,7 +52,7 @@ const permissionGeneral = {
 
 const saveConfig = (username, tokenResponse) => {
   if (fileExists(bzConfig)) {
-    fs.unlink(bzConfig)
+    fs.unlinkSync(bzConfig)
   }
 
   fs.appendFileSync(
