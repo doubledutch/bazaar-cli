@@ -1,3 +1,5 @@
+DEPRECATED in favor of [doubledutch CLI](https://github.com/doubledutch/cli)
+
 # New Project Creation
 ```
 > npm install -g bazaar-cli@latest
